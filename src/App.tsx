@@ -11,7 +11,7 @@ const checkJSEnableed = () => {
     `;
 
     const result = eval(script);
-    if (result === 'js-enabled') {
+    if (result === "js-enabled") {
       return true;
     }
   } catch (error) {
@@ -22,19 +22,30 @@ const checkJSEnableed = () => {
 
 const App = () => {
   const audioRef = useRef<any>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [loadAudio, setLoadAudio] = useState(false);
 
   const queryString = window.location.search;
   const params = new URLSearchParams(queryString);
   const src = params.get("src");
 
   useEffect(() => {
-   const isJSEnabled = checkJSEnableed();
-   if (!isJSEnabled) {
-    setError("Javascript is currently disabled. Please enable it for smooth play");
-   }
+    const isJSEnabled = checkJSEnableed();
+    if (!isJSEnabled) {
+      setError(
+        "Javascript is currently disabled. Please enable it for smooth play"
+      );
+    }
 
   }, []);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.preload = "auto";
+      audioRef.current.load();
+      setLoadAudio(true);
+    }
+  }, [loadAudio]);
 
   const onEnded = () => {
     if (audioRef.current) {
@@ -42,7 +53,9 @@ const App = () => {
     }
   };
 
-  const onError = (event: React.SyntheticEvent<HTMLAudioElement, Event>): void => {
+  const onError = (
+    event: React.SyntheticEvent<HTMLAudioElement, Event>
+  ): void => {
     const audio = event.currentTarget;
     const error = audio.error;
 
@@ -50,13 +63,15 @@ const App = () => {
       MEDIA_ERR_ABORTED: "Audio playback was aborted.",
       MEDIA_ERR_NETWORK: "A network error occurred during audio playback.",
       MEDIA_ERR_DECODE: "An error occurred while decoding the audio file.",
-      MEDIA_ERR_SRC_NOT_SUPPORTED: "The audio source is not supported."
-    } as Record<string, string>
+      MEDIA_ERR_SRC_NOT_SUPPORTED: "The audio source is not supported.",
+    } as Record<string, string>;
 
-    const getError = Object.keys(codes).find(key => String(key) === String(error?.code));
+    const getError = Object.keys(codes).find(
+      (key) => String(key) === String(error?.code)
+    );
 
     if (getError) {
-      setError(codes[getError])
+      setError(codes[getError]);
     }
 
     if (!getError && error) {
@@ -74,16 +89,19 @@ const App = () => {
       }}
     >
       <div>
-      <p style={{ color: 'red', fontStyle: "italic" }}>{error}</p>
-      <audio
-        ref={audioRef}
-        onEnded={onEnded}
-        onError={onError}
-        crossOrigin="anonymous"
-        preload="metadata"
-        controls
-        src={src || "https://res.cloudinary.com/dff3zvx7e/video/upload/v1736113820/hksfyzep4mr1mxaayr7p.mp3"}
-      />
+        <p style={{ color: "red", fontStyle: "italic" }}>{error}</p>
+        {!loadAudio ? <p>Your music is coming up...</p> : <></>}
+        <audio
+          ref={audioRef}
+          onEnded={onEnded}
+          onError={onError}
+          crossOrigin="anonymous"
+          controls
+          src={
+            src ||
+            "https://res.cloudinary.com/dff3zvx7e/video/upload/v1736113820/hksfyzep4mr1mxaayr7p.mp3"
+          }
+        />
       </div>
     </div>
   );
