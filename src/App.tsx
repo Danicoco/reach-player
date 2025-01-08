@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from "react";
-// import Reason from "./assets/you-are-the-reason.mp3";
+import SpotifyWebPlayer from "react-spotify-web-playback";
 
 const checkJSEnableed = () => {
   try {
@@ -23,11 +23,11 @@ const checkJSEnableed = () => {
 const App = () => {
   const audioRef = useRef<any>(null);
   const [error, setError] = useState("");
-  const [loadAudio, setLoadAudio] = useState(false);
 
   const queryString = window.location.search;
   const params = new URLSearchParams(queryString);
-  const src = params.get("src");
+  const token = params.get("token");
+  const uri = params.get("uri");
 
   useEffect(() => {
     const isJSEnabled = checkJSEnableed();
@@ -35,49 +35,27 @@ const App = () => {
       setError(
         "Javascript is currently disabled. Please enable it for smooth play"
       );
+      return;
     }
 
-  }, []);
+    if (!token || !uri) {
+      setError("Invalid URI");
+    }
+
+  }, [token, uri]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.preload = "auto";
-      audioRef.current.load();
-      setLoadAudio(true);
-    }
-  }, [loadAudio]);
+    // if (audioRef.current) {
+    //   audioRef.current.preload = "auto";
+    //   audioRef.current.load();
+    //   setLoadAudio(true);
+    // }
+    console.log({ audioRef });
+  }, [audioRef]);
 
-  const onEnded = () => {
-    if (audioRef.current) {
-      audioRef.current.play();
-    }
-  };
-
-  const onError = (
-    event: React.SyntheticEvent<HTMLAudioElement, Event>
-  ): void => {
-    const audio = event.currentTarget;
-    const error = audio.error;
-
-    const codes = {
-      MEDIA_ERR_ABORTED: "Audio playback was aborted.",
-      MEDIA_ERR_NETWORK: "A network error occurred during audio playback.",
-      MEDIA_ERR_DECODE: "An error occurred while decoding the audio file.",
-      MEDIA_ERR_SRC_NOT_SUPPORTED: "The audio source is not supported.",
-    } as Record<string, string>;
-
-    const getError = Object.keys(codes).find(
-      (key) => String(key) === String(error?.code)
-    );
-
-    if (getError) {
-      setError(codes[getError]);
-    }
-
-    if (!getError && error) {
-      setError("An unknown error occurred during audio playback.");
-    }
-  };
+ const onGetPlayer = (player: Spotify.Player) => {
+  console.log({player});
+ }
 
   return (
     <div
@@ -89,19 +67,19 @@ const App = () => {
       }}
     >
       <div>
-        <p style={{ color: "red", fontStyle: "italic" }}>{error}</p>
-        {!loadAudio ? <p>Your music is coming up...</p> : <></>}
-        <audio
-          ref={audioRef}
-          onEnded={onEnded}
-          onError={onError}
-          crossOrigin="anonymous"
-          controls
-          src={
-            src ||
-            "https://res.cloudinary.com/dff3zvx7e/video/upload/v1736113820/hksfyzep4mr1mxaayr7p.mp3"
-          }
-        />
+        {error ? (
+          <p style={{ color: "red", fontStyle: "italic", textAlign: "center" }}>{error}</p>
+        ) : (
+          <SpotifyWebPlayer
+            token={String(token)}
+            uris={String(uri)}
+            inlineVolume
+            preloadData
+            getPlayer={onGetPlayer}
+            // name="reach-spotify"
+            ref={audioRef}
+          />
+        )}
       </div>
     </div>
   );
