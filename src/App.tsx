@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState } from "react";
-import SpotifyWebPlayer from "react-spotify-web-playback";
+import { useEffect, useState } from "react";
+import SpotifyWebPlayer, { CallbackState } from "react-spotify-web-playback";
 
 const checkJSEnableed = () => {
   try {
@@ -21,7 +20,6 @@ const checkJSEnableed = () => {
 };
 
 const App = () => {
-  const audioRef = useRef<any>(null);
   const [error, setError] = useState("");
 
   const queryString = window.location.search;
@@ -41,21 +39,23 @@ const App = () => {
     if (!token || !uri) {
       setError("Invalid URI");
     }
-
   }, [token, uri]);
 
-  useEffect(() => {
-    // if (audioRef.current) {
-    //   audioRef.current.preload = "auto";
-    //   audioRef.current.load();
-    //   setLoadAudio(true);
-    // }
-    console.log({ audioRef });
-  }, [audioRef]);
+  const callback = (v: CallbackState) => {
+    if (v.status === "READY" && v.type === "preload_update" && !v.track.id) {
+      setError("INVALID URI");
+      return;
+    }
 
- const onGetPlayer = (player: Spotify.Player) => {
-  console.log({player});
- }
+    if (
+      v.status === "READY" &&
+      v.type === "preload_update" &&
+      v.isUnsupported
+    ) {
+      setError("Browser is not supported");
+      return;
+    }
+  };
 
   return (
     <div
@@ -68,16 +68,24 @@ const App = () => {
     >
       <div>
         {error ? (
-          <p style={{ color: "red", fontStyle: "italic", textAlign: "center" }}>{error}</p>
+          <p style={{ color: "red", fontStyle: "italic", textAlign: "center" }}>
+            {error}
+          </p>
         ) : (
           <SpotifyWebPlayer
+            name="Reach Player"
             token={String(token)}
-            uris={String(uri)}
+            uris={`spotify:track:${uri}`}
             inlineVolume
+            syncExternalDevice
+            hideCoverArt
+            hideAttribution
+            initialVolume={95}
+            showSaveIcon={false}
             preloadData
-            getPlayer={onGetPlayer}
-            // name="reach-spotify"
-            ref={audioRef}
+            magnifySliderOnHover
+            layout="responsive"
+            callback={callback}
           />
         )}
       </div>
